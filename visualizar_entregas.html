@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Acompanhamento de entregas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --fundo: #F5F7FA;
+      --papel: #FFFFFF;
+      --tinta: #14213D;
+      --suave: #5B6577;
+      --linha: #DDE3EC;
+      --foco: #1D4ED8;
+      --ok-bg: #DCFCE7;
+      --ok-tx: #166534;
+      --err-bg: #FEE2E2;
+      --err-tx: #991B1B;
+      --pend-bg: #FEF3C7;
+      --pend-tx: #92400E;
+      --link-bg: #DBEAFE;
+      --link-tx: #1E40AF;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fundo: #0E1624;
+        --papel: #162033;
+        --tinta: #EAF0FA;
+        --suave: #9AA7BD;
+        --linha: #27344D;
+        --foco: #7AA2FF;
+        --ok-bg: #12351F;
+        --ok-tx: #86EFAC;
+        --err-bg: #3D1717;
+        --err-tx: #FCA5A5;
+        --pend-bg: #3A2E0E;
+        --pend-tx: #FCD34D;
+        --link-bg: #14294F;
+        --link-tx: #93B8FF;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Figtree', system-ui, sans-serif;
+      background: var(--fundo);
+      color: var(--tinta);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(64px, calc(env(safe-area-inset-bottom) + 32px)) max(16px, env(safe-area-inset-left));
+    }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    h1,
+    h2,
+    .hero,
+    .kpi b {
+      font-family: 'Bricolage Grotesque', sans-serif;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .marca {
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -.01em;
+    }
+
+    nav {
+      display: flex;
+      gap: 4px;
+      background: var(--papel);
+      border: 1px solid var(--linha);
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    nav a {
+      padding: 8px 16px;
+      border-radius: 9px;
+      text-decoration: none;
+      color: var(--suave);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    nav a[aria-current=page] {
+      background: var(--tinta);
+      color: var(--papel);
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid var(--foco);
+      outline-offset: 2px;
+    }
+
+    .vazio,
+    .carregando {
+      color: var(--suave);
+      padding: 20px 0;
+    }
+
+    .erro {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--err-bg);
+      color: var(--err-tx);
+      margin-top: 16px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--suave);
+      margin-top: 8px;
+    }
+
+    /* ---------- PAINEL ---------- */
+    .hero {
+      font-weight: 800;
+      font-size: clamp(28px, 6vw, 46px);
+      line-height: 1.15;
+      letter-spacing: -.02em;
+    }
+
+    .hero .n {
+      color: var(--ok-tx);
+    }
+
+    .hero-sub {
+      color: var(--suave);
+      margin-top: 8px;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .kpi {
+      background: var(--papel);
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+
+    .kpi span {
+      font-size: 13px;
+      color: var(--suave);
+      display: block;
+    }
+
+    .kpi b {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .trilho {
+      height: 10px;
+      background: var(--linha);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .trilho>i {
+      display: block;
+      height: 100%;
+      border-radius: 10px;
+      width: 0;
+      transition: width .6s ease;
+    }
+
+    .kpi .trilho {
+      margin-top: 8px;
+    }
+
+    .bom {
+      background: var(--ok-tx);
+    }
+
+    .medio {
+      background: #D97706;
+    }
+
+    .ruim {
+      background: var(--err-tx);
+    }
+
+    section.bloco {
+      margin-top: 34px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+    }
+
+    .dica {
+      color: var(--suave);
+      font-size: 14px;
+      margin: 2px 0 12px;
+    }
+
+    .linha {
+      display: grid;
+      grid-template-columns: 92px 1fr 52px;
+      gap: 12px;
+      align-items: center;
+      padding: 8px 0;
+      border-top: 1px solid var(--linha);
+    }
+
+    .linha .rot {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .linha .pct {
+      font-weight: 600;
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .linha .sub {
+      grid-column: 2 / 4;
+      font-size: 12px;
+      color: var(--suave);
+      margin-top: -4px;
+    }
+
+    .faixa {
+      grid-template-columns: 92px 1fr 52px;
+    }
+
+    details {
+      margin-top: 34px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    /* ---------- ALUNO ---------- */
+    form {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    input[type=email] {
+      flex: 1 1 260px;
+      padding: 13px 14px;
+      font: inherit;
+      color: var(--tinta);
+      background: var(--papel);
+      border: 1.5px solid var(--linha);
+      border-radius: 10px;
+    }
+
+    button.principal {
+      padding: 13px 22px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--tinta);
+      color: var(--papel);
+      border: 0;
+      border-radius: 10px;
+    }
+
+    button.principal:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .resumo {
+      background: var(--papel);
+      border: 1px solid var(--linha);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+
+    .resumo .nome {
+      font-weight: 600;
+      color: var(--suave);
+    }
+
+    .resumo .numero {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 44px;
+      line-height: 1.1;
+      margin-top: 4px;
+    }
+
+    .resumo .numero small {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--suave);
+    }
+
+    .resumo .trilho {
+      margin-top: 14px;
+    }
+
+    .filtros {
+      display: flex;
+      gap: 8px;
+      margin: 22px 0 10px;
+      flex-wrap: wrap;
+    }
+
+    .filtro {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--linha);
+      background: var(--papel);
+      color: var(--tinta);
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .filtro[aria-pressed=true] {
+      background: var(--tinta);
+      color: var(--papel);
+      border-color: var(--tinta);
+    }
+
+    .aula {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-top: 1px solid var(--linha);
+    }
+
+    .aula h3 {
+      font-size: 15px;
+      font-weight: 600;
+      width: 64px;
+      flex: none;
+      padding-top: 8px;
+      color: var(--suave);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .chip.ok {
+      background: var(--ok-bg);
+      color: var(--ok-tx);
+    }
+
+    .chip.err {
+      background: var(--err-bg);
+      color: var(--err-tx);
+    }
+
+    .chip.pend {
+      background: var(--pend-bg);
+      color: var(--pend-tx);
+    }
+
+    .chip.link {
+      background: var(--link-bg);
+      color: var(--link-tx);
+    }
+
+    .chip[aria-expanded=true] {
+      border-color: currentColor;
+    }
+
+    .chip .mini {
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .detalhe {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: var(--papel);
+      border: 1px solid var(--linha);
+      border-left: 4px solid var(--foco);
+      border-radius: 10px;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    .detalhe[hidden],
+    [hidden] {
+      display: none !important;
+    }
+
+    .detalhe b {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .legenda {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      font-size: 13px;
+      color: var(--suave);
+    }
+
+  html { -webkit-text-size-adjust:100%; }
+  button, a, .filtro, nav a { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .detalhe, .resumo .nome { overflow-wrap:anywhere; }
+  nav a .curto { display:none; }
+
+  /* ---------- CELULAR ---------- */
+  @media (max-width:600px) {
+    body { padding-top:max(16px, env(safe-area-inset-top)); }
+    .topo { flex-direction:column; align-items:stretch; gap:10px; margin-bottom:20px; }
+    .marca { font-size:18px; }
+    nav { width:100%; }
+    nav a { flex:1; text-align:center; padding:11px 6px; font-size:13px; }
+    nav a .longo { display:none; } nav a .curto { display:inline; }
+
+    .hero { font-size:26px; }
+    .kpis { grid-template-columns:1fr 1fr; gap:10px; }
+    .kpi { padding:14px; } .kpi b { font-size:28px; }
+    .kpi:last-child { grid-column:1 / -1; }
+    section.bloco { margin-top:26px; }
+
+    .linha, .faixa { grid-template-columns:1fr auto; grid-template-areas:"rot pct" "bar bar" "sub sub"; row-gap:6px; padding:10px 0; }
+    .linha .rot { grid-area:rot; } .linha .pct { grid-area:pct; }
+    .linha .trilho { grid-area:bar; } .linha .sub { grid-area:sub; margin-top:0; }
+
+    form { flex-direction:column; }
+    input[type=email], select, button.principal, .filtro { min-height:46px; }
+    form input, form button.principal { width:100%; flex:none; }
+    .resumo { padding:16px; } .resumo .numero { font-size:38px; }
+    .filtros { gap:6px; } .filtro { flex:1; text-align:center; padding:10px 8px; }
+    .aula { flex-direction:column; gap:4px; }
+    .aula h3 { width:auto; padding-top:0; }
+    .chip { min-height:44px; padding:10px 14px; }
+    .legenda { gap:8px 14px; }
+  }
+
+    @media (prefers-reduced-motion: reduce) {
+      .trilho>i {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="topo">
+      <div class="marca">Acompanhamento de entregas</div>
+      <nav aria-label="Páginas">
+        <a href="#painel" id="nav-painel"><span class="longo">Painel geral</span><span class="curto">Geral</span></a>
+        <a href="#aluno"
+          id="nav-aluno"><span class="longo">Consulta por e-mail</span><span class="curto">Consulta</span></a>
+      </nav>
+    </div>
+
+    <!-- ===== PÁGINA 1: PAINEL ===== -->
+    <div id="pg-painel" hidden>
+      <div id="p-carregando" class="carregando">Carregando painel…</div>
+      <div id="p-erro" class="erro" role="alert" hidden></div>
+      <div id="p-conteudo" hidden>
+        <p class="hero">A média por aluno é <span class="n" id="p-media">0</span> atividades entregues.</p>
+        <p class="hero-sub" id="p-sub"></p>
+
+        <div class="kpis">
+          <div class="kpi"><span>Alunos</span><b id="k-alunos">0</b></div>
+          <div class="kpi"><span>Atividades</span><b id="k-atv">0</b></div>
+          <div class="kpi"><span>Entregas da turma</span><b id="k-pct">0%</b>
+            <div class="trilho" aria-hidden="true"><i id="k-barra"></i></div>
+          </div>
+        </div>
+        <p class="meta" id="p-meta"></p>
+
+        <section class="bloco">
+          <h2>Alunos por nível de entrega</h2>
+          <p class="dica">Quantos alunos entregaram cada faixa do total de atividades.</p>
+          <div id="p-faixas"></div>
+        </section>
+
+        <section class="bloco">
+          <h2>Atividades com menor entrega</h2>
+          <p class="dica">As 8 que mais precisam de atenção.</p>
+          <div id="p-baixas"></div>
+        </section>
+
+        <details>
+          <summary>Todas as atividades</summary>
+          <div id="p-todas" style="margin-top:12px"></div>
+        </details>
+      </div>
+    </div>
+
+    <!-- ===== PÁGINA 2: CONSULTA POR E-MAIL ===== -->
+    <div id="pg-aluno" hidden>
+      <h2>Consulta por e-mail</h2>
+      <p class="dica">Digite o e-mail institucional para ver as entregas de um aluno.</p>
+      <form id="form">
+        <input type="email" id="email" placeholder="nome@aluno.educacao.pe.gov.br" autocomplete="email" required aria-label="E-mail institucional">
+        <button class="principal" id="btn" type="submit">Buscar</button>
+      </form>
+      <div id="a-erro" class="erro" role="alert" hidden></div>
+
+      <section id="a-res" hidden>
+        <div class="resumo">
+          <div class="nome" id="a-nome"></div>
+          <div class="numero"><span id="a-ent">0</span> <small>de <span id="a-tot">0</span> entregues</small></div>
+          <div class="trilho" aria-hidden="true"><i id="a-barra" class="bom"></i></div>
+          <div class="meta" id="a-meta"></div>
+        </div>
+        <div class="filtros" role="group" aria-label="Filtrar atividades">
+          <button class="filtro" data-f="todas" aria-pressed="true">Todas</button>
+          <button class="filtro" data-f="pend" aria-pressed="false">Pendentes</button>
+          <button class="filtro" data-f="err" aria-pressed="false">Erradas</button>
+        </div>
+        <div id="a-lista"></div>
+        <div class="detalhe" id="a-det" hidden></div>
+        <div class="legenda">
+          <span>✅ Correta</span><span>❌ Errada</span><span>🟡 Pendente</span><span>🔗 Miniprojeto enviado</span><span>⚠️ Miniprojeto pendente</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzkGoiIQ3ZDrdA-0FKHzOwQjzYJYOFBKLGw6GFT5a91kEK06P8tjCQ5cLCljL7VajRJvw/exec';
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  const classe = p => p >= 75 ? 'bom' : p >= 50 ? 'medio' : 'ruim';
+  const EMOJI = { ok:'✅', err:'❌', pend:'🟡', link:'🔗' };
+  let resumo = null, carregandoResumo = false;
+
+  async function chamar(qs) {
+    const r = await fetch(API_URL + '?' + qs);
+    return r.json();
+  }
+
+  /* ---------------- ROTAS ---------------- */
+  function rota() {
+    const aluno = location.hash === '#aluno';
+    $('pg-painel').hidden = aluno; $('pg-aluno').hidden = !aluno;
+    $('nav-painel').setAttribute('aria-current', aluno ? 'false' : 'page');
+    $('nav-aluno').setAttribute('aria-current', aluno ? 'page' : 'false');
+    if (!aluno && !resumo) carregarPainel();
+  }
+  window.addEventListener('hashchange', rota);
+
+  /* ---------------- PAINEL ---------------- */
+  async function carregarPainel() {
+    if (carregandoResumo) return; carregandoResumo = true;
+    $('p-carregando').hidden = false; $('p-erro').hidden = true; $('p-conteudo').hidden = true;
+    try {
+      const j = await chamar('acao=resumo');
+      if (!j.ok) throw new Error(j.erro || 'Não foi possível carregar o painel.');
+      resumo = j; desenharPainel();
+    } catch (e) {
+      $('p-erro').textContent = e.message === 'Failed to fetch' ? 'Sem conexão com o servidor. Tente novamente em instantes.' : e.message;
+      $('p-erro').hidden = false;
+    } finally { $('p-carregando').hidden = true; carregandoResumo = false; }
+  }
+
+  function linhaBarra(rotulo, pct, sub, titulo) {
+    const d = document.createElement('div'); d.className = 'linha'; if (titulo) d.title = titulo;
+    const r = document.createElement('div'); r.className = 'rot'; r.textContent = rotulo;
+    const t = document.createElement('div'); t.className = 'trilho';
+    const i = document.createElement('i'); i.className = classe(pct); t.appendChild(i);
+    const p = document.createElement('div'); p.className = 'pct'; p.textContent = fmt(pct) + '%';
+    d.append(r, t, p);
+    if (sub) { const s = document.createElement('div'); s.className = 'sub'; s.textContent = sub; d.appendChild(s); }
+    requestAnimationFrame(() => { i.style.width = Math.min(100, pct) + '%'; });
+    return d;
+  }
+
+  function desenharPainel() {
+    const R = resumo;
+    $('p-media').textContent = fmt(R.mediaEntregues);
+    $('p-sub').textContent = 'de ' + R.totalAtividades + ' atividades, considerando ' + R.alunos + ' alunos.';
+    $('k-alunos').textContent = R.alunos; $('k-atv').textContent = R.totalAtividades;
+    $('k-pct').textContent = fmt(R.pctGeral) + '%';
+    const kb = $('k-barra'); kb.className = classe(R.pctGeral);
+    requestAnimationFrame(() => { kb.style.width = Math.min(100, R.pctGeral) + '%'; });
+    $('p-meta').textContent = R.atualizado ? 'Dados atualizados em ' + R.atualizado : '';
+
+    const fx = $('p-faixas'); fx.textContent = '';
+    R.faixas.forEach(f => {
+      const pct = R.alunos ? f.qtd / R.alunos * 100 : 0;
+      const l = linhaBarra(f.rotulo, pct, f.qtd + (f.qtd === 1 ? ' aluno' : ' alunos'));
+      l.classList.add('faixa'); l.querySelector('i').className = ''; l.querySelector('i').style.background = 'var(--foco)';
+      fx.appendChild(l);
+    });
+
+    const sub = a => a.tipo === 'M'
+      ? a.entregues + ' de ' + R.alunos + ' enviaram'
+      : a.entregues + ' de ' + R.alunos + ' entregaram' + (a.acerto != null ? ' · ' + a.acerto + '% de acerto' : '');
+    const rot = a => 'Aula ' + a.aula + ' ' + a.rotulo;
+
+    const baixas = $('p-baixas'); baixas.textContent = '';
+    R.atividades.slice().sort((a, b) => a.pct - b.pct).slice(0, 8)
+      .forEach(a => baixas.appendChild(linhaBarra(rot(a), a.pct, sub(a), a.titulo)));
+
+    const todas = $('p-todas'); todas.textContent = '';
+    R.atividades.slice().sort((a, b) => a.aula - b.aula || (a.tipo === 'M') - (b.tipo === 'M') || a.rotulo.localeCompare(b.rotulo, 'pt', { numeric: true }))
+      .forEach(a => todas.appendChild(linhaBarra(rot(a), a.pct, sub(a), a.titulo)));
+
+    $('p-conteudo').hidden = false;
+  }
+
+  /* ---------------- CONSULTA POR E-MAIL ---------------- */
+  let dados = null, filtro = 'todas', aberto = null;
+  $('email').value = localStorage.getItem('email') || '';
+
+  $('form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const email = $('email').value.trim().toLowerCase();
+    $('a-erro').hidden = true; $('btn').disabled = true; $('btn').textContent = 'Buscando…';
+    try {
+      const j = await chamar('email=' + encodeURIComponent(email));
+      if (!j.ok) throw new Error(j.erro || 'Não foi possível consultar.');
+      localStorage.setItem('email', email);
+      dados = j; filtro = 'todas'; desenharAluno();
+    } catch (e) {
+      $('a-res').hidden = true;
+      $('a-erro').textContent = e.message === 'Failed to fetch' ? 'Sem conexão com o servidor. Tente novamente em instantes.' : e.message;
+      $('a-erro').hidden = false;
+    } finally { $('btn').disabled = false; $('btn').textContent = 'Buscar'; }
+  });
+
+  document.querySelectorAll('.filtro').forEach(b => b.addEventListener('click', () => {
+    filtro = b.dataset.f;
+    document.querySelectorAll('.filtro').forEach(x => x.setAttribute('aria-pressed', x === b));
+    listaAluno();
+  }));
+
+  function desenharAluno() {
+    $('a-nome').textContent = dados.nome; $('a-ent').textContent = dados.entregues; $('a-tot').textContent = dados.total;
+    $('a-meta').textContent = dados.atualizado ? 'Atualizado em ' + dados.atualizado : '';
+    document.querySelectorAll('.filtro').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'todas'));
+    const pct = dados.total ? dados.entregues / dados.total * 100 : 0, b = $('a-barra');
+    b.className = classe(pct); b.style.width = '0';
+    requestAnimationFrame(() => { b.style.width = pct + '%'; });
+    $('a-res').hidden = false; listaAluno();
+  }
+
+  function listaAluno() {
+    const lista = $('a-lista'); lista.textContent = ''; $('a-det').hidden = true; aberto = null;
+    const porAula = {};
+    dados.atividades.forEach(a => {
+      if (filtro === 'pend' && a.status !== 'pend') return;
+      if (filtro === 'err' && a.status !== 'err') return;
+      (porAula[a.aula] = porAula[a.aula] || []).push(a);
+    });
+    const aulas = Object.keys(porAula).map(Number).sort((a, b) => a - b);
+    if (!aulas.length) {
+      const v = document.createElement('p'); v.className = 'vazio';
+      v.textContent = filtro === 'pend' ? 'Nenhuma pendência.' : 'Nada para mostrar aqui.'; lista.appendChild(v); return;
+    }
+    aulas.forEach(n => {
+      const row = document.createElement('div'); row.className = 'aula';
+      const h = document.createElement('h3'); h.textContent = 'Aula ' + n; row.appendChild(h);
+      const chips = document.createElement('div'); chips.className = 'chips';
+      porAula[n].forEach(a => {
+        let el;
+        if (a.tipo === 'M' && a.status === 'link' && a.url) {
+          el = document.createElement('a'); el.href = a.url; el.target = '_blank'; el.rel = 'noopener';
+        } else {
+          el = document.createElement('button'); el.type = 'button'; el.setAttribute('aria-expanded', 'false');
+          el.addEventListener('click', () => detalhar(a, el));
+        }
+        el.className = 'chip ' + a.status; el.title = a.titulo;
+        el.appendChild(document.createTextNode((a.tipo === 'M' && a.status === 'pend' ? '⚠️' : EMOJI[a.status]) + ' ' + a.rotulo));
+        if (a.status === 'pend') { const m = document.createElement('span'); m.className = 'mini'; m.textContent = 'pendente'; el.appendChild(m); }
+        chips.appendChild(el);
+      });
+      row.appendChild(chips); lista.appendChild(row);
+    });
+  }
+
+  function detalhar(a, el) {
+    const box = $('a-det');
+    document.querySelectorAll('.chip[aria-expanded=true]').forEach(x => x.setAttribute('aria-expanded', 'false'));
+    if (aberto === a) { box.hidden = true; aberto = null; return; }
+    aberto = a; el.setAttribute('aria-expanded', 'true'); box.textContent = '';
+    const t = document.createElement('b'); t.textContent = a.titulo; box.appendChild(t);
+    box.appendChild(document.createTextNode(a.nota || (a.status === 'pend' ? 'Ainda não respondeu esta atividade.' : 'Sem detalhes.')));
+    box.hidden = false; box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  rota();
+  </script>
+</body>
+
+</html>
